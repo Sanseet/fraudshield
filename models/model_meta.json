@@ -1,0 +1,59 @@
+{
+  "model_type": "XGBoostClassifier",
+  "feature_columns": [
+    "log_amount",
+    "amount_vs_avg",
+    "amount_zscore",
+    "is_large_amount",
+    "hour_sin",
+    "hour_cos",
+    "is_night",
+    "is_weekend",
+    "merchant_cat_code",
+    "is_high_risk_category",
+    "country_risk_score",
+    "is_international",
+    "card_present",
+    "device_change",
+    "transactions_last_1h",
+    "transactions_last_24h",
+    "velocity_ratio",
+    "high_velocity",
+    "distance_log",
+    "account_age_log",
+    "new_account",
+    "failed_attempts_last_24h",
+    "risk_score_raw"
+  ],
+  "metrics": {
+    "precision": 0.9769,
+    "recall": 0.9867,
+    "f1_score": 0.9818,
+    "roc_auc": 0.9994,
+    "avg_precision": 0.9962,
+    "test_samples": 10000,
+    "fraud_samples": 300
+  },
+  "feature_importance": {
+    "transactions_last_24h": 0.5169327259063721,
+    "distance_log": 0.11610458046197891,
+    "log_amount": 0.1027827188372612,
+    "transactions_last_1h": 0.06864264607429504,
+    "high_velocity": 0.056709080934524536,
+    "risk_score_raw": 0.05495177209377289,
+    "device_change": 0.019044015556573868,
+    "failed_attempts_last_24h": 0.01353480014950037,
+    "card_present": 0.006600682158023119,
+    "is_large_amount": 0.006174576003104448,
+    "velocity_ratio": 0.005711013916879892,
+    "new_account": 0.005194967146962881,
+    "account_age_log": 0.005052253603935242,
+    "amount_zscore": 0.004820242058485746,
+    "is_night": 0.0036189421080052853
+  },
+  "thresholds": {
+    "allow": 0.3,
+    "review": 0.6,
+    "block": 0.6
+  }
+}
