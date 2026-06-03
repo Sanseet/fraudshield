@@ -1,14 +1,22 @@
-# Real-Time Fraud Detection System
+# 🛡️ FraudShield — Real-Time Fraud Detection System
 
-A production-grade fraud detection system combining an XGBoost ML model with an agentic decision layer to score financial transactions in real time. Built with a clean, modular architecture covering the full lifecycle from data generation to a monitored REST API.
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-FraudShield-blue?style=for-the-badge&logo=github)](https://sanseet.github.io/fraudshield/)
+[![API Docs](https://img.shields.io/badge/API%20Docs-Swagger-green?style=for-the-badge&logo=fastapi)](https://fraudshield-b2rl.onrender.com/docs)
+[![Backend](https://img.shields.io/badge/Backend-Render-purple?style=for-the-badge&logo=render)](https://fraudshield-b2rl.onrender.com)
+
+A production-grade fraud detection system combining an XGBoost ML model with an agentic decision layer to score financial transactions in real time. Upload a payment slip or enter transaction details manually — the system extracts features, scores the transaction, and returns a risk decision instantly.
+
+🔗 **[Live App](https://sanseet.github.io/fraudshield/)** · 📖 **[API Docs](https://fraudshield-b2rl.onrender.com/docs)**
 
 ---
 
 ## Highlights
 
-- **98% F1 Score** on a 50k-transaction synthetic dataset with a 3% fraud rate
+- **98% F1 Score** on a 50k-transaction dataset with a 3% fraud rate
 - **Sub-30ms inference** with p95/p99 latency tracking
 - **Three-tier decision engine** (ALLOW / REVIEW / BLOCK) with hard override rules and contextual modifiers
+- **Slip parsing** — upload a `.txt`, `.pdf`, `.jpg`, or `.png` payment slip and fields are extracted automatically
+- **Live dashboard** — real-time system metrics and recent transaction history
 - **27-test suite** covering every layer — features, model, agent, API, and database
 
 ---
@@ -20,15 +28,16 @@ A production-grade fraud detection system combining an XGBoost ML model with an 
 | ML Model | XGBoost, Scikit-Learn, imbalanced-learn (SMOTE) |
 | API | FastAPI, Uvicorn, Pydantic v2 |
 | Database | SQLite, SQLAlchemy ORM |
+| Frontend | HTML / CSS / JavaScript (GitHub Pages) |
+| Hosting | Render (backend), GitHub Pages (frontend) |
 | Testing | Python unittest |
-| Data | Pandas, NumPy |
 
 ---
 
 ## Project Structure
 
 ```
-fraud_detection/
+fraudshield/
 ├── data/
 │   ├── transactions.csv          # Synthetic dataset (50k rows)
 │   └── fraud_detection.db        # SQLite database
@@ -50,6 +59,8 @@ fraud_detection/
 │       ├── main.py               # FastAPI app and endpoints
 │       ├── schemas.py            # Pydantic request/response models
 │       └── monitoring.py         # Real-time metrics collector
+├── docs/                         # Frontend (GitHub Pages)
+│   └── index.html
 ├── tests/
 │   └── test_all.py               # 27 unit tests
 ├── requirements.txt
@@ -58,11 +69,11 @@ fraud_detection/
 
 ---
 
-## Getting Started
+## Running Locally
 
 ```bash
-git clone <repo>
-cd fraud_detection
+git clone https://github.com/sanseet/fraudshield
+cd fraudshield
 pip install -r requirements.txt
 
 # Generate dataset → train model → run tests
@@ -72,7 +83,9 @@ bash setup.sh
 uvicorn src.api.main:app --reload --port 8000
 ```
 
-Interactive API docs available at `http://localhost:8000/docs`
+Local API docs at `http://localhost:8000/docs`
+
+> **Note:** The frontend on GitHub Pages points to the hosted Render backend. To run fully locally, update the `API_BASE` constant in `docs/index.html` to `http://localhost:8000`.
 
 ---
 
@@ -90,7 +103,7 @@ Interactive API docs available at `http://localhost:8000/docs`
 ### Example Request
 
 ```bash
-curl -X POST http://localhost:8000/predict \
+curl -X POST https://fraudshield-b2rl.onrender.com/predict \
   -H "Content-Type: application/json" \
   -d '{
     "transaction_id": "TXN001",
@@ -186,11 +199,7 @@ These fire regardless of the model score:
 - `device_change = 1 AND is_international = 1` → **REVIEW**
 
 ### Contextual Modifiers
-The effective score is bumped upward for:
-- Night-time high-value transactions
-- New accounts (low `account_age_days`)
-- High velocity ratios
-- Card-not-present international combinations
+The effective score is bumped upward for night-time high-value transactions, new accounts, high velocity ratios, and card-not-present international combinations.
 
 ---
 
@@ -198,11 +207,11 @@ The effective score is bumped upward for:
 
 Four tables persist the full transaction lifecycle — raw inputs, model scores, agent decisions, and a complete prediction audit log.
 
-```sql
-transactions      -- raw input features per transaction
-fraud_scores      -- model score, confidence, and latency
-decisions         -- agent decision, reasons, and recommended action
-prediction_logs   -- full audit log with input features and errors
+```
+transactions      — raw input features per transaction
+fraud_scores      — model score, confidence, and latency
+decisions         — agent decision, reasons, and recommended action
+prediction_logs   — full audit log with input features and errors
 ```
 
 ---
