@@ -402,7 +402,8 @@
 </main>
 
 <script>
-const API = 'http://127.0.0.1:8000';
+// const API = 'http://127.0.0.1:8000';
+const API = 'https://fraudshield-b2rl.onrender.com';
 let extractedPayload = null;
 
 /* ── API STATUS ── */
@@ -766,7 +767,7 @@ async function runPredict(payload, contentId, emptyId) {
       renderResult(data, contentId, emptyId);
     }
   } catch {
-    showResultHtml(contentId,emptyId,`<div class="banner err">✕ Cannot connect to API. Make sure uvicorn is running on port 8000.</div>`);
+    showResultHtml(contentId,emptyId,`<div class="banner err">✕ Cannot connect to API.</div>`);
   }
 }
 
