@@ -1,8 +1,3 @@
-"""
-Agentic Decision Layer
-Converts ML fraud scores into business actions using rule-based + ML logic.
-"""
-
 from __future__ import annotations
 
 import json
@@ -15,10 +10,6 @@ import numpy as np
 
 META_PATH = Path(__file__).parent.parent.parent / "models" / "model_meta.json"
 
-# ─────────────────────────────────────────────────────────
-# Decision Categories
-# ─────────────────────────────────────────────────────────
-
 class Decision(str, Enum):
     ALLOW  = "ALLOW"
     REVIEW = "REVIEW"
@@ -29,7 +20,7 @@ class Decision(str, Enum):
 class DecisionResult:
     decision        : str
     fraud_score     : float
-    confidence      : str          # HIGH / MEDIUM / LOW
+    confidence      : str          
     reasons         : list[str]
     rule_triggers   : list[str]
     recommended_action: str
@@ -40,36 +31,19 @@ class DecisionResult:
         return asdict(self)
 
 
-# ─────────────────────────────────────────────────────────
-# Risk Thresholds
-# ─────────────────────────────────────────────────────────
-
 @dataclass
 class RiskThresholds:
-    allow_below  : float = 0.30   # score < 0.30 → ALLOW
-    review_above : float = 0.30   # score >= 0.30 → REVIEW
-    block_above  : float = 0.60   # score >= 0.60 → BLOCK
+    allow_below  : float = 0.30   
+    review_above : float = 0.30  
+    block_above  : float = 0.60   
 
-    # Hard-rule overrides
     max_amount_auto_block  : float = 10_000
     max_velocity_1h_block  : int   = 8
     max_failed_attempts    : int   = 3
     max_distance_km        : float = 500
 
 
-# ─────────────────────────────────────────────────────────
-# Agentic Decision Engine
-# ─────────────────────────────────────────────────────────
-
 class FraudDecisionAgent:
-    """
-    Multi-signal decision engine.
-
-    Decision logic (in priority order):
-    1. Hard-coded override rules (extreme signals)
-    2. ML score thresholds
-    3. Contextual risk modifiers
-    """
 
     def __init__(self, thresholds: Optional[RiskThresholds] = None):
         self._custom_thresholds = thresholds
@@ -87,24 +61,16 @@ class FraudDecisionAgent:
             self.thresholds.block_above  = t.get("block",  0.60)
             self.thresholds.review_above = t.get("review", 0.30)
 
-    # ── Public API ────────────────────────────────────────
     def decide(self, fraud_score: float, transaction: dict) -> DecisionResult:
         t0 = time.time()
 
         reasons       : list[str] = []
         rule_triggers : list[str] = []
 
-        # Step 1: Hard override rules
         hard_decision = self._apply_hard_rules(transaction, rule_triggers)
-
-        # Step 2: Score-based decision
         score_decision = self._score_decision(fraud_score)
-
-        # Step 3: Contextual modifiers
         modifier = self._contextual_modifier(transaction, fraud_score, reasons)
         effective_score = min(1.0, fraud_score + modifier)
-
-        # Step 4: Merge — hard rules always win
         if hard_decision:
             final = hard_decision
             reasons.insert(0, "Hard override rule triggered")
@@ -126,7 +92,6 @@ class FraudDecisionAgent:
             processing_ms    = elapsed_ms,
         )
 
-    # ── Hard Rules ────────────────────────────────────────
     def _apply_hard_rules(self, txn: dict, triggers: list[str]) -> Optional[Decision]:
         th = self.thresholds
 
@@ -154,7 +119,6 @@ class FraudDecisionAgent:
 
         return None
 
-    # ── Score-Based Decision ──────────────────────────────
     def _score_decision(self, score: float) -> Decision:
         if score >= self.thresholds.block_above:
             return Decision.BLOCK
@@ -162,7 +126,6 @@ class FraudDecisionAgent:
             return Decision.REVIEW
         return Decision.ALLOW
 
-    # ── Contextual Modifiers ──────────────────────────────
     def _contextual_modifier(self, txn: dict, score: float, reasons: list) -> float:
         modifier = 0.0
 
@@ -188,17 +151,14 @@ class FraudDecisionAgent:
 
         return modifier
 
-    # ── Confidence Level ──────────────────────────────────
     def _confidence(self, score: float, decision: Decision) -> str:
         if decision == Decision.ALLOW:
             return "HIGH" if score < 0.10 else "MEDIUM"
         if decision == Decision.BLOCK:
             return "HIGH" if score > 0.80 else "MEDIUM"
-        # REVIEW
         margin = abs(score - 0.45)
         return "LOW" if margin < 0.08 else "MEDIUM"
 
-    # ── Recommended Actions ───────────────────────────────
     def _recommended_action(self, decision: Decision, score: float, txn: dict) -> str:
         if decision == Decision.ALLOW:
             return "Process transaction normally"
@@ -207,7 +167,6 @@ class FraudDecisionAgent:
                 "Block transaction. Notify cardholder via SMS/email. "
                 "Flag account for manual review within 24h."
             )
-        # REVIEW
         if score > 0.50:
             return "Hold transaction. Request OTP / step-up authentication."
         return "Flag for analyst review. Allow with enhanced logging."
@@ -220,9 +179,6 @@ class FraudDecisionAgent:
         return f"Fraud score {score:.3f} falls in review range"
 
 
-# ─────────────────────────────────────────────────────────
-# Singleton
-# ─────────────────────────────────────────────────────────
 _agent: Optional[FraudDecisionAgent] = None
 
 def get_agent() -> FraudDecisionAgent:
@@ -231,10 +187,6 @@ def get_agent() -> FraudDecisionAgent:
         _agent = FraudDecisionAgent()
     return _agent
 
-
-# ─────────────────────────────────────────────────────────
-# Quick Test
-# ─────────────────────────────────────────────────────────
 if __name__ == "__main__":
     agent = FraudDecisionAgent()
 

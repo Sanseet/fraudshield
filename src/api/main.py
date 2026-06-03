@@ -1,8 +1,3 @@
-"""
-FastAPI Application — Real-Time Fraud Detection Service
-Endpoints: predict, batch predict, fraud score lookup, health, metrics
-"""
-
 from __future__ import annotations
 
 import sys
@@ -11,7 +6,6 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-# Path resolution
 ROOT = Path(__file__).parent.parent.parent
 sys.path.extend([
     str(ROOT / "src" / "ml"),
@@ -40,11 +34,6 @@ from database        import (
 )
 from monitoring import get_metrics
 
-
-# ─────────────────────────────────────────────────────────
-# App Init
-# ─────────────────────────────────────────────────────────
-
 app = FastAPI(
     title       = "Real-Time Fraud Detection API",
     description = "ML-powered fraud detection with agentic decision layer",
@@ -67,22 +56,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ─────────────────────────────────────────────────────────
-# Startup
-# ─────────────────────────────────────────────────────────
-
 @app.on_event("startup")
 async def startup():
-    get_engine()           # init DB
-    get_predictor()        # load model
-    get_agent()            # init decision engine
-    get_metrics()          # init metrics collector
+    get_engine()           
+    get_predictor()        
+    get_agent()            
+    get_metrics()          
     print("✅ Fraud Detection Service started")
 
-
-# ─────────────────────────────────────────────────────────
-# Middleware — request timing
-# ─────────────────────────────────────────────────────────
 
 @app.middleware("http")
 async def add_request_id(request: Request, call_next):
@@ -95,10 +76,6 @@ async def add_request_id(request: Request, call_next):
     return response
 
 
-# ─────────────────────────────────────────────────────────
-# Shared prediction logic
-# ─────────────────────────────────────────────────────────
-
 def _run_prediction(payload: TransactionRequest, db: Session) -> PredictionResponse:
     txn_dict   = payload.to_dict()
     txn_id     = payload.transaction_id
@@ -108,13 +85,10 @@ def _run_prediction(payload: TransactionRequest, db: Session) -> PredictionRespo
     error_msg  = None
 
     try:
-        # 1. ML inference
         fraud_score, latency_ms = predictor.predict(txn_dict)
 
-        # 2. Agentic decision
         result = agent.decide(fraud_score, txn_dict)
 
-        # 3. Persist
         save_transaction(db, txn_id, txn_dict)
         save_fraud_score(
             db, txn_id, fraud_score,
@@ -126,7 +100,6 @@ def _run_prediction(payload: TransactionRequest, db: Session) -> PredictionRespo
             fraud_score, result.decision, latency_ms
         )
 
-        # 4. Metrics
         metrics.record(fraud_score, result.decision, latency_ms)
 
         return PredictionResponse(
@@ -154,11 +127,6 @@ def _run_prediction(payload: TransactionRequest, db: Session) -> PredictionRespo
             detail      = f"Prediction failed: {error_msg}",
         )
 
-
-# ─────────────────────────────────────────────────────────
-# Endpoints
-# ─────────────────────────────────────────────────────────
-
 @app.get("/", include_in_schema=False)
 async def root():
     return {
@@ -169,8 +137,6 @@ async def root():
         "metrics" : "/metrics",
     }
 
-
-# ── Health ────────────────────────────────────────────────
 
 @app.get(
     "/health",
@@ -198,8 +164,6 @@ async def health_check(db: Session = Depends(get_db)):
     )
 
 
-# ── Metrics ───────────────────────────────────────────────
-
 @app.get(
     "/metrics",
     response_model = MetricsResponse,
@@ -211,7 +175,6 @@ async def get_monitoring_metrics():
     return MetricsResponse(**snap.to_dict())
 
 
-# ── Single Prediction ─────────────────────────────────────
 
 @app.post(
     "/predict",
@@ -231,8 +194,6 @@ async def predict(
     """
     return _run_prediction(payload, db)
 
-
-# ── Batch Prediction ──────────────────────────────────────
 
 @app.post(
     "/predict/batch",
@@ -265,7 +226,6 @@ async def predict_batch(
     )
 
 
-# ── Fraud Score Retrieval ─────────────────────────────────
 
 @app.get(
     "/fraud-score/{transaction_id}",
@@ -298,8 +258,6 @@ async def get_fraud_score(
     )
 
 
-# ── Recent Transactions ───────────────────────────────────
-
 @app.get(
     "/transactions/recent",
     summary = "List recent scored transactions",
@@ -327,9 +285,6 @@ async def recent_transactions(
     ]
 
 
-# ─────────────────────────────────────────────────────────
-# Exception handlers
-# ─────────────────────────────────────────────────────────
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

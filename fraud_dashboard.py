@@ -1,9 +1,3 @@
-"""
-Fraud Detection Dashboard — Streamlit Frontend (v5 — Dark Theme)
-Run with: streamlit run fraud_dashboard.py
-Make sure your FastAPI server is running on http://127.0.0.1:8000
-"""
-
 import streamlit as st
 import requests
 import re

@@ -1,8 +1,3 @@
-"""
-ML Predictor Service
-Loads the trained XGBoost model and runs real-time inference.
-"""
-
 from __future__ import annotations
 
 import json
@@ -20,7 +15,6 @@ META_PATH   = ROOT / "models" / "model_meta.json"
 
 
 class FraudPredictor:
-    """Singleton inference engine. Thread-safe after initialization."""
 
     def __init__(self):
         self.model         = None
@@ -41,10 +35,6 @@ class FraudPredictor:
         print(f"✅ Model loaded ({len(self.feature_cols)} features)")
 
     def predict(self, payload: dict) -> tuple[float, float]:
-        """
-        Returns (fraud_score, latency_ms).
-        payload must contain the raw transaction fields.
-        """
         if not self._loaded:
             self.load()
 

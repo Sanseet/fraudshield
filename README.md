@@ -1,6 +1,15 @@
 # Real-Time Fraud Detection System
 
-An intelligent, production-oriented fraud detection system with ML-powered risk scoring and an agentic decision layer. Built as a complete Applied AI Engineer portfolio project.
+A production-grade fraud detection system combining an XGBoost ML model with an agentic decision layer to score financial transactions in real time. Built with a clean, modular architecture covering the full lifecycle from data generation to a monitored REST API.
+
+---
+
+## Highlights
+
+- **98% F1 Score** on a 50k-transaction synthetic dataset with a 3% fraud rate
+- **Sub-30ms inference** with p95/p99 latency tracking
+- **Three-tier decision engine** (ALLOW / REVIEW / BLOCK) with hard override rules and contextual modifiers
+- **27-test suite** covering every layer — features, model, agent, API, and database
 
 ---
 
@@ -9,10 +18,10 @@ An intelligent, production-oriented fraud detection system with ML-powered risk 
 | Layer | Technology |
 |---|---|
 | ML Model | XGBoost, Scikit-Learn, imbalanced-learn (SMOTE) |
-| Data | Pandas, NumPy |
-| API | FastAPI, Uvicorn |
+| API | FastAPI, Uvicorn, Pydantic v2 |
 | Database | SQLite, SQLAlchemy ORM |
 | Testing | Python unittest |
+| Data | Pandas, NumPy |
 
 ---
 
@@ -31,40 +40,39 @@ fraud_detection/
 │   ├── ml/
 │   │   ├── generate_data.py      # Synthetic fraud dataset generator
 │   │   ├── features.py           # Feature engineering pipeline (23 features)
-│   │   ├── train.py              # Training pipeline: SMOTE + XGBoost + eval
-│   │   └── predictor.py          # Inference engine (singleton)
+│   │   ├── train.py              # SMOTE + XGBoost training pipeline
+│   │   └── predictor.py          # Inference engine (singleton pattern)
 │   ├── agent/
-│   │   └── decision_engine.py    # Agentic decision layer: ALLOW/REVIEW/BLOCK
+│   │   └── decision_engine.py    # Agentic decision layer
 │   ├── db/
 │   │   └── database.py           # SQLAlchemy ORM models + CRUD helpers
 │   └── api/
-│       ├── main.py               # FastAPI app + all endpoints
+│       ├── main.py               # FastAPI app and endpoints
 │       ├── schemas.py            # Pydantic request/response models
 │       └── monitoring.py         # Real-time metrics collector
 ├── tests/
-│   └── test_all.py               # 27 unit tests across all layers
+│   └── test_all.py               # 27 unit tests
 ├── requirements.txt
-├── setup.sh                      # One-shot setup script
-└── README.md
+└── setup.sh                      # One-shot setup script
 ```
 
 ---
 
-## Setup
+## Getting Started
 
 ```bash
 git clone <repo>
 cd fraud_detection
 pip install -r requirements.txt
 
-# Generate dataset → Train model → Run tests
+# Generate dataset → train model → run tests
 bash setup.sh
 
-# Start API
+# Start the API
 uvicorn src.api.main:app --reload --port 8000
 ```
 
-API docs available at `http://localhost:8000/docs`
+Interactive API docs available at `http://localhost:8000/docs`
 
 ---
 
@@ -76,10 +84,10 @@ API docs available at `http://localhost:8000/docs`
 | `GET` | `/metrics` | Real-time monitoring metrics |
 | `POST` | `/predict` | Score a single transaction |
 | `POST` | `/predict/batch` | Score up to 100 transactions |
-| `GET` | `/fraud-score/{id}` | Retrieve score for past transaction |
-| `GET` | `/transactions/recent` | List recent scored transactions |
+| `GET` | `/fraud-score/{id}` | Retrieve score for a past transaction |
+| `GET` | `/transactions/recent` | List recently scored transactions |
 
-### Example — Single Prediction
+### Example Request
 
 ```bash
 curl -X POST http://localhost:8000/predict \
@@ -129,23 +137,23 @@ curl -X POST http://localhost:8000/predict \
 ## ML Pipeline
 
 ### Dataset
-- 50,000 synthetic transactions, 3% fraud rate
-- 15 raw features including amount, velocity, geolocation, device signals
+50,000 synthetic transactions with a 3% fraud rate across 15 raw features — including transaction amount, velocity signals, geolocation, and device indicators.
 
-### Feature Engineering (23 features)
+### Feature Engineering
+23 engineered features built from the raw inputs:
 - Log-transformed and normalized amounts
-- Cyclic time encoding (sin/cos of hour)
-- Velocity ratios (1h / 24h transaction counts)
+- Cyclic time encoding (sin/cos of hour of day)
+- Velocity ratios (1h vs. 24h transaction counts)
 - Composite risk score
 - Distance and account age transforms
 
 ### Class Imbalance
-SMOTE oversampling balances the training set from 97/3 to 50/50 before model training.
+SMOTE oversampling rebalances the training set from 97/3 to 50/50 before model training, preventing the classifier from ignoring the minority fraud class.
 
 ### Model
-XGBoost with 400 estimators, depth 6, learning rate 0.05, L1/L2 regularization.
+XGBoost with 400 estimators, max depth 6, learning rate 0.05, and L1/L2 regularization.
 
-### Evaluation Results
+### Evaluation
 
 | Metric | Score |
 |---|---|
@@ -159,96 +167,63 @@ XGBoost with 400 estimators, depth 6, learning rate 0.05, L1/L2 regularization.
 
 ## Agentic Decision Layer
 
-The decision engine converts raw fraud scores into business actions using a three-tier logic:
+The decision engine translates raw model scores into business actions using a three-tier threshold system, layered with hard override rules and contextual score modifiers.
 
-```
-Score < 0.30  →  ALLOW   (process normally)
-Score 0.30–0.60  →  REVIEW  (flag / step-up auth)
-Score > 0.60  →  BLOCK   (halt + notify)
-```
+### Decision Thresholds
 
-Hard override rules fire regardless of score:
-- `transactions_last_1h >= 8` → BLOCK
-- `failed_attempts_last_24h >= 3` → BLOCK
-- `amount > 10,000` → BLOCK
-- `device_change=1 AND is_international=1` → REVIEW
+| Score Range | Decision | Action |
+|---|---|---|
+| < 0.30 | ALLOW | Process normally |
+| 0.30 – 0.60 | REVIEW | Flag for step-up authentication |
+| > 0.60 | BLOCK | Halt and notify cardholder |
 
-Contextual modifiers bump the effective score for night-time high-value transactions, new accounts, high velocity ratios, and card-not-present international combinations.
+### Hard Override Rules
+These fire regardless of the model score:
+
+- `transactions_last_1h >= 8` → **BLOCK**
+- `failed_attempts_last_24h >= 3` → **BLOCK**
+- `amount > 10,000` → **BLOCK**
+- `device_change = 1 AND is_international = 1` → **REVIEW**
+
+### Contextual Modifiers
+The effective score is bumped upward for:
+- Night-time high-value transactions
+- New accounts (low `account_age_days`)
+- High velocity ratios
+- Card-not-present international combinations
 
 ---
 
 ## Database Schema
 
+Four tables persist the full transaction lifecycle — raw inputs, model scores, agent decisions, and a complete prediction audit log.
+
 ```sql
-CREATE TABLE transactions (
-    id TEXT PRIMARY KEY,
-    transaction_id TEXT UNIQUE NOT NULL,
-    amount REAL, hour_of_day INTEGER, day_of_week INTEGER,
-    merchant_category TEXT, country_code TEXT,
-    card_present BOOLEAN, transactions_last_1h INTEGER,
-    transactions_last_24h INTEGER, avg_amount_last_7d REAL,
-    distance_from_home_km REAL, account_age_days REAL,
-    failed_attempts_last_24h INTEGER, is_international BOOLEAN,
-    device_change BOOLEAN, created_at DATETIME
-);
-
-CREATE TABLE fraud_scores (
-    id TEXT PRIMARY KEY,
-    transaction_id TEXT NOT NULL,
-    fraud_score REAL, decision TEXT, confidence TEXT,
-    model_version TEXT, processing_ms REAL, created_at DATETIME
-);
-
-CREATE TABLE decisions (
-    id TEXT PRIMARY KEY,
-    transaction_id TEXT NOT NULL,
-    decision TEXT, fraud_score REAL, confidence TEXT,
-    reasons JSON, rule_triggers JSON,
-    recommended_action TEXT, created_at DATETIME
-);
-
-CREATE TABLE prediction_logs (
-    id TEXT PRIMARY KEY,
-    transaction_id TEXT NOT NULL,
-    input_features JSON, fraud_score REAL,
-    decision TEXT, latency_ms REAL,
-    error TEXT, created_at DATETIME
-);
+transactions      -- raw input features per transaction
+fraud_scores      -- model score, confidence, and latency
+decisions         -- agent decision, reasons, and recommended action
+prediction_logs   -- full audit log with input features and errors
 ```
 
 ---
 
-## Monitoring Metrics
+## Monitoring
 
-Available at `GET /metrics`:
+The `/metrics` endpoint exposes real-time observability:
 
-- `total_transactions` — lifetime count
-- `fraud_rate_pct` — % transactions scoring above block threshold
-- `avg_fraud_score` — rolling mean score
-- `avg_latency_ms`, `p95_latency_ms`, `p99_latency_ms` — inference latency
-- `decision_distribution` — ALLOW/REVIEW/BLOCK counts + percentages
-- `transactions_last_1min`, `transactions_last_5min` — throughput rate
-- `error_count`, `error_rate_pct` — failure tracking
-- `uptime_seconds` — service uptime
+- **Throughput** — transactions per minute and per 5-minute window
+- **Fraud rate** — percentage of transactions above the block threshold
+- **Latency** — average, p95, and p99 inference times
+- **Decision distribution** — ALLOW / REVIEW / BLOCK counts and percentages
+- **Error tracking** — error count and error rate
+- **Uptime** — service uptime in seconds
 
 ---
 
-## Running Tests
+## Tests
 
 ```bash
-cd tests
-python test_all.py
+cd tests && python test_all.py
 ```
 
-27 tests across: feature engineering, decision engine, ML predictor, Pydantic schemas, database CRUD, metrics collector.
-
----
-
-## Skills Demonstrated
-
-- End-to-end ML pipeline: EDA → feature engineering → SMOTE → XGBoost → evaluation
-- Production API design: FastAPI, Pydantic v2 validation, structured error handling
-- Agentic system design: multi-signal rule engine with contextual modifiers
-- Database engineering: SQLAlchemy ORM, indexed schema, CRUD abstraction
-- Observability: real-time metrics, percentile latency, sliding window rates
-- Software engineering: modular architecture, singleton patterns, 27-test suite
+27 tests covering feature engineering, the decision engine, ML predictor, Pydantic schemas, database CRUD operations, and the metrics collector.

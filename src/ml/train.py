@@ -1,8 +1,3 @@
-"""
-Fraud Detection Model — Training Pipeline
-XGBoost + SMOTE + Full Evaluation Suite
-"""
-
 import json
 import time
 import joblib
@@ -28,10 +23,6 @@ MODEL_PATH  = MODEL_DIR / "fraud_model.joblib"
 SCALER_PATH = MODEL_DIR / "scaler.joblib"
 META_PATH   = MODEL_DIR / "model_meta.json"
 
-
-# ─────────────────────────────────────────
-# 1. Load & Preprocess
-# ─────────────────────────────────────────
 def load_and_preprocess(path: Path) -> tuple:
     print("📂 Loading dataset …")
     df = pd.read_csv(path, parse_dates=["timestamp"])
@@ -40,10 +31,8 @@ def load_and_preprocess(path: Path) -> tuple:
     print(f"   Missing values  : {df.isnull().sum().sum()}")
     print(f"   Fraud rate      : {df['is_fraud'].mean()*100:.2f}%")
 
-    # Drop leakage columns
     df = df.drop(columns=["transaction_id", "timestamp"], errors="ignore")
 
-    # Engineer features
     df_feat = engineer_features(df)
     X = df_feat[FEATURE_COLUMNS]
     y = df_feat["is_fraud"]
@@ -52,9 +41,6 @@ def load_and_preprocess(path: Path) -> tuple:
     return X, y, df
 
 
-# ─────────────────────────────────────────
-# 2. Handle Class Imbalance with SMOTE
-# ─────────────────────────────────────────
 def apply_smote(X_train, y_train):
     print("\n⚖️  Applying SMOTE …")
     before = dict(zip(*np.unique(y_train, return_counts=True)))
@@ -66,9 +52,6 @@ def apply_smote(X_train, y_train):
     return X_res, y_res
 
 
-# ─────────────────────────────────────────
-# 3. Train XGBoost Model
-# ─────────────────────────────────────────
 def train_model(X_train, y_train):
     print("\n🚀 Training XGBoost model …")
     t0 = time.time()
@@ -83,7 +66,7 @@ def train_model(X_train, y_train):
         gamma=1,
         reg_alpha=0.1,
         reg_lambda=1.0,
-        scale_pos_weight=1,          # SMOTE already balanced
+        scale_pos_weight=1,          
         eval_metric="logloss",
         use_label_encoder=False,
         random_state=42,
@@ -94,10 +77,6 @@ def train_model(X_train, y_train):
     print(f"   Training time   : {elapsed:.1f}s")
     return model
 
-
-# ─────────────────────────────────────────
-# 4. Evaluate
-# ─────────────────────────────────────────
 def evaluate(model, X_test, y_test, scaler=None) -> dict:
     print("\n📊 Evaluating model …")
 
@@ -133,10 +112,6 @@ def evaluate(model, X_test, y_test, scaler=None) -> dict:
 
     return metrics
 
-
-# ─────────────────────────────────────────
-# 5. Feature Importance
-# ─────────────────────────────────────────
 def print_feature_importance(model, top_n=10):
     importance = model.feature_importances_
     fi = sorted(zip(FEATURE_COLUMNS, importance), key=lambda x: x[1], reverse=True)
@@ -146,10 +121,6 @@ def print_feature_importance(model, top_n=10):
         print(f"   {name:<30s} {score:.4f}  {bar}")
     return fi
 
-
-# ─────────────────────────────────────────
-# 6. Save Artifacts
-# ─────────────────────────────────────────
 def save_artifacts(model, scaler, metrics, feature_importance):
     MODEL_DIR.mkdir(exist_ok=True)
     joblib.dump(model, MODEL_PATH)
@@ -174,10 +145,6 @@ def save_artifacts(model, scaler, metrics, feature_importance):
     print(f"   Scaler   → {SCALER_PATH}")
     print(f"   Metadata → {META_PATH}")
 
-
-# ─────────────────────────────────────────
-# MAIN
-# ─────────────────────────────────────────
 def main():
     print("=" * 50)
     print("  FRAUD DETECTION — TRAINING PIPELINE")
@@ -193,7 +160,6 @@ def main():
 
     X_train_res, y_train_res = apply_smote(X_train.values, y_train.values)
 
-    # Scale after SMOTE
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train_res)
     X_test_scaled  = scaler.transform(X_test.values)

@@ -1,8 +1,3 @@
-"""
-Synthetic Fraud Dataset Generator
-Generates realistic transaction data with behavioral patterns.
-"""
-
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -13,7 +8,6 @@ def generate_fraud_dataset(n_samples: int = 50000) -> pd.DataFrame:
     n_fraud = int(n_samples * 0.03)       # 3% fraud rate
     n_legit = n_samples - n_fraud
 
-    # --- Legitimate transactions ---
     legit = pd.DataFrame({
         "amount": np.random.lognormal(mean=3.5, sigma=1.2, size=n_legit).clip(1, 10000),
         "hour_of_day": np.random.choice(range(24), size=n_legit, p=_hour_weights()),
@@ -36,7 +30,6 @@ def generate_fraud_dataset(n_samples: int = 50000) -> pd.DataFrame:
         "is_fraud": 0,
     })
 
-    # --- Fraudulent transactions ---
     fraud = pd.DataFrame({
         "amount": np.random.lognormal(mean=5.2, sigma=1.5, size=n_fraud).clip(50, 25000),
         "hour_of_day": np.random.choice(range(24), size=n_fraud, p=_fraud_hour_weights()),

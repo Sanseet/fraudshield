@@ -1,17 +1,8 @@
-"""
-API Schemas — Pydantic v2 models for request/response validation.
-"""
-
 from __future__ import annotations
 
 from datetime import datetime
 from typing import Any, Optional
 from pydantic import BaseModel, Field, field_validator
-
-
-# ─────────────────────────────────────────────────────────
-# Request
-# ─────────────────────────────────────────────────────────
 
 class TransactionRequest(BaseModel):
     transaction_id          : str   = Field(..., examples=["TXN00012345"])
@@ -51,11 +42,6 @@ class TransactionRequest(BaseModel):
 
 class BatchTransactionRequest(BaseModel):
     transactions: list[TransactionRequest] = Field(..., min_length=1, max_length=100)
-
-
-# ─────────────────────────────────────────────────────────
-# Response
-# ─────────────────────────────────────────────────────────
 
 class PredictionResponse(BaseModel):
     transaction_id     : str

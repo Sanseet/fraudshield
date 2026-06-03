@@ -1,8 +1,3 @@
-"""
-Test Suite — Fraud Detection System
-Tests: ML predictor, decision engine, database layer, API schemas
-"""
-
 import sys
 import unittest
 from pathlib import Path
@@ -15,10 +10,6 @@ sys.path.extend([
     str(ROOT / "src" / "api"),
 ])
 
-
-# ─────────────────────────────────────────────────────────
-# Feature Engineering Tests
-# ─────────────────────────────────────────────────────────
 
 class TestFeatureEngineering(unittest.TestCase):
 
@@ -53,17 +44,12 @@ class TestFeatureEngineering(unittest.TestCase):
     def test_is_night_daytime(self):
         from features import engineer_features
         df = engineer_features(self.sample)
-        self.assertEqual(df["is_night"].iloc[0], 0)  # hour 14 is not night
+        self.assertEqual(df["is_night"].iloc[0], 0)  
 
     def test_velocity_ratio(self):
         from features import engineer_features
         df = engineer_features(self.sample)
         self.assertAlmostEqual(df["velocity_ratio"].iloc[0], 2 / (5 + 1e-9), places=4)
-
-
-# ─────────────────────────────────────────────────────────
-# Decision Engine Tests
-# ─────────────────────────────────────────────────────────
 
 class TestDecisionEngine(unittest.TestCase):
 
@@ -121,10 +107,6 @@ class TestDecisionEngine(unittest.TestCase):
         self.assertGreaterEqual(result.processing_ms, 0)
 
 
-# ─────────────────────────────────────────────────────────
-# Predictor Tests
-# ─────────────────────────────────────────────────────────
-
 class TestPredictor(unittest.TestCase):
 
     def setUp(self):
@@ -167,11 +149,6 @@ class TestPredictor(unittest.TestCase):
         self.assertIsNotNone(self.predictor.model)
         self.assertIsNotNone(self.predictor.scaler)
 
-
-# ─────────────────────────────────────────────────────────
-# Schema Validation Tests
-# ─────────────────────────────────────────────────────────
-
 class TestSchemas(unittest.TestCase):
 
     def _valid_payload(self):
@@ -210,10 +187,6 @@ class TestSchemas(unittest.TestCase):
         req = TransactionRequest(**payload)
         self.assertEqual(req.country_code, "IN")
 
-
-# ─────────────────────────────────────────────────────────
-# Database Tests
-# ─────────────────────────────────────────────────────────
 
 class TestDatabase(unittest.TestCase):
 
@@ -258,10 +231,6 @@ class TestDatabase(unittest.TestCase):
         })
         self.assertEqual(rec.decision, "REVIEW")
 
-
-# ─────────────────────────────────────────────────────────
-# Monitoring Tests
-# ─────────────────────────────────────────────────────────
 
 class TestMonitoring(unittest.TestCase):
 

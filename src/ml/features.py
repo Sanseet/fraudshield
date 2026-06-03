@@ -1,8 +1,3 @@
-"""
-Feature Engineering Pipeline
-Builds behavioural + velocity + risk features for fraud detection.
-"""
-
 import pandas as pd
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -21,24 +16,16 @@ HIGH_RISK_CATEGORIES = {"travel", "entertainment"}
 
 
 def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Main feature engineering function.
-    Returns a new DataFrame with all engineered features.
-    """
     df = df.copy()
-
-    # --- Encode categoricals ---
     df["merchant_cat_code"] = df["merchant_category"].map(CATEGORY_MAP).fillna(3).astype(int)
     df["country_risk_score"] = df["country_code"].map(COUNTRY_RISK).fillna(0.4)
     df["is_high_risk_category"] = df["merchant_category"].isin(HIGH_RISK_CATEGORIES).astype(int)
 
-    # --- Time-based features ---
     df["is_night"] = ((df["hour_of_day"] >= 22) | (df["hour_of_day"] <= 5)).astype(int)
     df["is_weekend"] = (df["day_of_week"] >= 5).astype(int)
     df["hour_sin"] = np.sin(2 * np.pi * df["hour_of_day"] / 24)
     df["hour_cos"] = np.cos(2 * np.pi * df["hour_of_day"] / 24)
 
-    # --- Amount features ---
     df["log_amount"] = np.log1p(df["amount"])
     df["amount_vs_avg"] = df["amount"] / (df["avg_amount_last_7d"] + 1e-9)
     df["is_large_amount"] = (df["amount"] > 1000).astype(int)
@@ -47,11 +34,9 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
         (df["avg_amount_last_7d"].std() + 1e-9)
     ).clip(-5, 5)
 
-    # --- Velocity features ---
     df["velocity_ratio"] = df["transactions_last_1h"] / (df["transactions_last_24h"] + 1e-9)
     df["high_velocity"] = (df["transactions_last_1h"] >= 5).astype(int)
 
-    # --- Risk compound features ---
     df["risk_score_raw"] = (
         df["is_international"] * 0.3 +
         df["device_change"] * 0.25 +

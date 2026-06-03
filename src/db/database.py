@@ -1,8 +1,3 @@
-"""
-Database Layer — SQLite with SQLAlchemy ORM
-Stores transactions, fraud scores, decisions, prediction logs.
-"""
-
 from __future__ import annotations
 
 import uuid
@@ -19,18 +14,8 @@ from sqlalchemy.pool import StaticPool
 DB_PATH = Path(__file__).parent.parent.parent / "data" / "fraud_detection.db"
 DB_URL  = f"sqlite:///{DB_PATH}"
 
-
-# ─────────────────────────────────────────────────────────
-# ORM Base
-# ─────────────────────────────────────────────────────────
-
 class Base(DeclarativeBase):
     pass
-
-
-# ─────────────────────────────────────────────────────────
-# Tables
-# ─────────────────────────────────────────────────────────
 
 class TransactionRecord(Base):
     __tablename__ = "transactions"
@@ -106,11 +91,6 @@ class PredictionLog(Base):
         Index("ix_log_created_at", "created_at"),
     )
 
-
-# ─────────────────────────────────────────────────────────
-# Engine & Session
-# ─────────────────────────────────────────────────────────
-
 _engine = None
 _SessionLocal = None
 
@@ -136,7 +116,6 @@ def get_session_factory():
 
 
 def get_db() -> Session:
-    """FastAPI dependency."""
     factory = get_session_factory()
     db = factory()
     try:
@@ -144,10 +123,6 @@ def get_db() -> Session:
     finally:
         db.close()
 
-
-# ─────────────────────────────────────────────────────────
-# CRUD helpers
-# ─────────────────────────────────────────────────────────
 
 def save_transaction(db: Session, txn_id: str, payload: dict) -> TransactionRecord:
     rec = TransactionRecord(
@@ -221,10 +196,6 @@ def save_prediction_log(db: Session, txn_id: str, features: dict,
     db.refresh(rec)
     return rec
 
-
-# ─────────────────────────────────────────────────────────
-# Smoke test
-# ─────────────────────────────────────────────────────────
 if __name__ == "__main__":
     engine = get_engine()
     tables = Base.metadata.tables.keys()
